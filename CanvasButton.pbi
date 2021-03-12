@@ -1,6 +1,4 @@
-﻿IncludeFile "..\MaterialVector\MaterialVector.pbi"
-
-DeclareModule CanvasButton
+﻿DeclareModule CanvasButton
 	
 	EnumerationBinary
 		#Default
@@ -288,6 +286,5 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 282
 ; Folding = fj+-
 ; EnableXP
