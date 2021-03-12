@@ -1,10 +1,12 @@
 ﻿DeclareModule CanvasButton
 	
 	EnumerationBinary
-		#Default
+		#Default = 0
+		#LightTheme = 0
 		
 		#ToggleButton
 		#MaterialVectorIcon
+		#DarkTheme
 	EndEnumeration
 	
 	Declare Gadget(Gadget, X, Y, Width, Height, Text.s, Flags = #Default)
@@ -54,7 +56,7 @@ Module CanvasButton
 	EndStructure
 	
 	; Default theme
-	CompilerIf #PB_Compiler_OS = #PB_OS_Windows
+	CompilerIf #PB_Compiler_OS = #PB_OS_Windows ; RGB/GBR switcharoo...
 		#Style_Dark_Back = $FF36312F
 		#Style_Dark_BackWarm = $FF3C3734
 		#Style_Dark_BackHot = $FF433C39
@@ -62,6 +64,15 @@ Module CanvasButton
 		#Style_Dark_Front = $FF97928E
 		#Style_Dark_FrontWarm = $FFDEDDDC
 		#Style_Dark_FrontHot = $FFFFFFFF
+		
+		#Style_Light_Back = $FFF5F3F2
+		#Style_Light_BackWarm = $FFEDEAE8
+		#Style_Light_BackHot = $FFDCD7D4
+		
+		#Style_Light_Front = $FF80746A
+		#Style_Light_FrontWarm = $FF38332E
+		#Style_Light_FrontHot = $FF070606
+		
 	CompilerElse
 		#Style_Dark_Back = $2F3136FF
 		#Style_Dark_BackWarm = $34373CFF
@@ -70,6 +81,14 @@ Module CanvasButton
 		#Style_Dark_Front = $8E9297FF
 		#Style_Dark_FrontWarm = $DCDDDEFF
 		#Style_Dark_FrontHot = $FFFFFFFF
+		
+		#Style_Light_Back = $F2F3F5FF
+		#Style_Light_BackWarm = $E8EAEDFF
+		#Style_Light_BackHot = $D4D7DCFF
+		
+		#Style_Light_Front = $6A7480FF
+		#Style_Light_FrontWarm = $2E3338FF
+		#Style_Light_FrontHot = $060607FF
 	CompilerEndIf
 	;}
 	
@@ -92,13 +111,23 @@ Module CanvasButton
 			*Data = AllocateStructure(GadgetData)
 			
 			With *Data
-				\BackColors(#Cold) = #Style_Dark_Back
-				\BackColors(#Warm) = #Style_Dark_BackWarm
-				\BackColors(#Hot) = #Style_Dark_BackHot
-				
-				\FrontColors(#Cold) = #Style_Dark_Front
-				\FrontColors(#Warm) = #Style_Dark_FrontWarm
-				\FrontColors(#Hot) = #Style_Dark_FrontHot
+				If Flags & #DarkTheme
+					\BackColors(#Cold) = #Style_Dark_Back
+					\BackColors(#Warm) = #Style_Dark_BackWarm
+					\BackColors(#Hot) = #Style_Dark_BackHot
+					
+					\FrontColors(#Cold) = #Style_Dark_Front
+					\FrontColors(#Warm) = #Style_Dark_FrontWarm
+					\FrontColors(#Hot) = #Style_Dark_FrontHot
+				Else
+					\BackColors(#Cold) = #Style_Light_Back
+					\BackColors(#Warm) = #Style_Light_BackWarm
+					\BackColors(#Hot) = #Style_Light_BackHot
+					
+					\FrontColors(#Cold) = #Style_Light_Front
+					\FrontColors(#Warm) = #Style_Light_FrontWarm
+					\FrontColors(#Hot) = #Style_Light_FrontHot
+				EndIf
 				
 				\Width = Width
 				\Height = Height
@@ -163,13 +192,23 @@ Module CanvasButton
 			*Data = AllocateStructure(GadgetData)
 			
 			With *Data
-				\BackColors(#Cold) = #Style_Dark_Back
-				\BackColors(#Warm) = #Style_Dark_BackWarm
-				\BackColors(#Hot) = #Style_Dark_BackHot
-				
-				\FrontColors(#Cold) = #Style_Dark_Front
-				\FrontColors(#Warm) = #Style_Dark_FrontWarm
-				\FrontColors(#Hot) = #Style_Dark_FrontHot
+				If Flags & #DarkTheme
+					\BackColors(#Cold) = #Style_Dark_Back
+					\BackColors(#Warm) = #Style_Dark_BackWarm
+					\BackColors(#Hot) = #Style_Dark_BackHot
+					
+					\FrontColors(#Cold) = #Style_Dark_Front
+					\FrontColors(#Warm) = #Style_Dark_FrontWarm
+					\FrontColors(#Hot) = #Style_Dark_FrontHot
+				Else
+					\BackColors(#Cold) = #Style_Light_Back
+					\BackColors(#Warm) = #Style_Light_BackWarm
+					\BackColors(#Hot) = #Style_Light_BackHot
+					
+					\FrontColors(#Cold) = #Style_Light_Front
+					\FrontColors(#Warm) = #Style_Light_FrontWarm
+					\FrontColors(#Hot) = #Style_Light_FrontHot
+				EndIf
 				
 				\Type = #Text
 				\Text = Text
@@ -286,5 +325,5 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; Folding = fj+-
+; Folding = -n+-
 ; EnableXP
