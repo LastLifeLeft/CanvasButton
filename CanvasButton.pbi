@@ -1,6 +1,6 @@
 ﻿DeclareModule CanvasButton
 	
-	EnumerationBinary
+	EnumerationBinary ;Flags
 		#Default = 0
 		#LightTheme = 0
 		
@@ -9,8 +9,20 @@
 		#DarkTheme
 	EndEnumeration
 	
+	Enumeration ;Colors
+		#ColorType_BackCold
+		#ColorType_BackWarm
+		#ColorType_BackHot
+		
+		#ColorType_FrontCold
+		#ColorType_FrontWarm
+		#ColorType_FrontHot
+		
+	EndEnumeration
+	
 	Declare Gadget(Gadget, X, Y, Width, Height, Text.s, Flags = #Default)
 	Declare GadgetImage(Gadget, X, Y, Width, Height, Image = -1, Flags = #Default)
+	Declare SetColor(Gadget, Colortype, Color)
 	Declare Free(Gadget)
 	Declare BindEventHandler(Gadget, *Handler)
 EndDeclareModule
@@ -237,6 +249,18 @@ Module CanvasButton
 		*Data\Handler = *Handler
 	EndProcedure
 	
+	Procedure SetColor(Gadget, Colortype, Color)
+		Protected *Data.GadgetData = GetGadgetData(Gadget)
+		
+		If Colortype < 3
+			*Data\BackColors(Colortype) = Color
+		Else
+			*Data\BackColors(Colortype - 3) = Color
+		EndIf
+		
+		Redraw(Gadget)
+	EndProcedure
+	
 	; Private procedures
 	Procedure Handler_Canvas()
 		Protected Gadget = EventGadget(), *Data.GadgetData = GetGadgetData(Gadget), Result
@@ -315,6 +339,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	OpenWindow(0, 0, 0, 400, 300, "CanvasButton example", #PB_Window_ScreenCentered | #PB_Window_SystemMenu)
 	
 	CanvasButton::GadgetImage(0, 10,10,40,40, MaterialVector::#Person, CanvasButton::#MaterialVectorIcon)
+	CanvasButton::SetColor(0, CanvasButton::#ColorType_BackWarm, $FFFF00FF)
 	
 	BindEvent(#PB_Event_CloseWindow, @HandlerClose())
 	CanvasButton::BindEventHandler(0, @HandlerButton())
@@ -325,5 +350,5 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; Folding = -n+-
+; Folding = HoQ+
 ; EnableXP
