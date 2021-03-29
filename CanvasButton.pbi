@@ -265,15 +265,15 @@ Module CanvasButton
 	EndProcedure
 	
 	Procedure SetData(Gadget, *Data)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
+		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
 		
-		*Data\Data = *Data
+		*GadgetData\Data = *Data
 	EndProcedure
 	
 	Procedure GetData(Gadget)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
+		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
 		
-		ProcedureReturn *Data\Data
+		ProcedureReturn *GadgetData\Data
 	EndProcedure
 	
 	; Private procedures
@@ -365,7 +365,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 275
+; CursorPosition = 269
 ; FirstLine = 43
 ; Folding = HQD6
 ; EnableXP
