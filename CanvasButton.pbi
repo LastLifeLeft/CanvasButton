@@ -25,6 +25,8 @@
 	Declare SetColor(Gadget, Colortype, Color)
 	Declare Free(Gadget)
 	Declare BindEventHandler(Gadget, *Handler)
+	Declare SetData(Gadget, *Data)
+	Declare GetData(Gadget)
 EndDeclareModule
 
 Module CanvasButton
@@ -60,6 +62,7 @@ Module CanvasButton
 		ImageYOffset.i
 		
 		*Handler
+		*Data
 		
 		CompilerIf Defined(MaterialVector,#PB_Module)
 			MaterialVector.b
@@ -261,6 +264,18 @@ Module CanvasButton
 		Redraw(Gadget)
 	EndProcedure
 	
+	Procedure SetData(Gadget, *Data)
+		Protected *Data.GadgetData = GetGadgetData(Gadget)
+		
+		*Data\Data = *Data
+	EndProcedure
+	
+	Procedure GetData(Gadget)
+		Protected *Data.GadgetData = GetGadgetData(Gadget)
+		
+		ProcedureReturn *Data\Data
+	EndProcedure
+	
 	; Private procedures
 	Procedure Handler_Canvas()
 		Protected Gadget = EventGadget(), *Data.GadgetData = GetGadgetData(Gadget), Result
@@ -350,5 +365,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; Folding = HoQ+
+; CursorPosition = 275
+; FirstLine = 43
+; Folding = HQD6
 ; EnableXP
