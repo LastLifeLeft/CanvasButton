@@ -27,6 +27,8 @@
 	Declare BindEventHandler(Gadget, *Handler)
 	Declare SetData(Gadget, *Data)
 	Declare GetData(Gadget)
+	Declare SetText(Gadget, Text.s)
+	Declare SetImage(Gadget, Image)
 EndDeclareModule
 
 Module CanvasButton
@@ -276,6 +278,24 @@ Module CanvasButton
 		ProcedureReturn *GadgetData\Data
 	EndProcedure
 	
+	Procedure SetText(Gadget, Text.s)
+		
+	EndProcedure
+	
+	Procedure SetImage(Gadget, Image)
+		Protected *Data.GadgetData = GetGadgetData(Gadget)
+		
+		CompilerIf Defined(MaterialVector,#PB_Module)
+			If *Data\MaterialVector = #True
+				*Data\Image = Image
+			EndIf
+		CompilerElse
+			
+		CompilerEndIf
+		
+		Redraw(Gadget)
+	EndProcedure
+	
 	; Private procedures
 	Procedure Handler_Canvas()
 		Protected Gadget = EventGadget(), *Data.GadgetData = GetGadgetData(Gadget), Result
@@ -343,6 +363,8 @@ EndModule
 
 CompilerIf #PB_Compiler_IsMainFile
 	
+	IncludeFile "..\MaterialVector\MaterialVector.pbi"
+	
 	Procedure HandlerClose()
 		End
 	EndProcedure
@@ -353,8 +375,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 	OpenWindow(0, 0, 0, 400, 300, "CanvasButton example", #PB_Window_ScreenCentered | #PB_Window_SystemMenu)
 	
-	CanvasButton::GadgetImage(0, 10,10,40,40, MaterialVector::#Person, CanvasButton::#MaterialVectorIcon)
-	CanvasButton::SetColor(0, CanvasButton::#ColorType_BackWarm, $FFFF00FF)
+	CanvasButton::GadgetImage(0, 10,10,40,40, MaterialVector::#Play, CanvasButton::#MaterialVectorIcon | CanvasButton::#DarkTheme)
 	
 	BindEvent(#PB_Event_CloseWindow, @HandlerClose())
 	CanvasButton::BindEventHandler(0, @HandlerButton())
@@ -365,7 +386,6 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 269
-; FirstLine = 43
-; Folding = HQD6
+; CursorPosition = 255
+; Folding = DAAI-
 ; EnableXP
