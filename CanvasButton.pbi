@@ -57,6 +57,8 @@ Module CanvasButton
 		Width.i
 		Height.i
 		
+		Font.i
+		
 		Image.i
 		ImageWidth.i
 		ImageHeight.i
@@ -107,6 +109,8 @@ Module CanvasButton
 		#Style_Light_FrontWarm = $2E3338FF
 		#Style_Light_FrontHot = $060607FF
 	CompilerEndIf
+	
+	Global DefaultFont = LoadFont(#PB_Any, "Calibri", 12, #PB_Font_HighQuality)
 	;}
 	
 	; Private procedures declaration
@@ -229,6 +233,8 @@ Module CanvasButton
 				
 				\Type = #Text
 				\Text = Text
+				
+				\Font = DefaultFont
 			EndWith
 			
 			SetGadgetData(Gadget, *Data)
@@ -332,19 +338,22 @@ Module CanvasButton
 	
 	Procedure Redraw(Gadget)
 		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		
-		StartVectorDrawing(CanvasVectorOutput(Gadget))
-		AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
- 		VectorSourceColor(*Data\BackColors(*Data\State))
- 		FillPath()
- 		
- 		VectorSourceColor(*Data\FrontColors(*Data\State))
- 		
- 		If *Data\Type = #Text
- 			
- 		Else
+		If *Data\Type = #Text
+			StartDrawing(CanvasOutput(Gadget))
+			Box(0,0, OutputWidth(), OutputHeight(), *Data\BackColors(*Data\State))
+			DrawingFont(FontID(*Data\Font))
+			DrawText((OutputWidth() - TextWidth(*Data\Text)) * 0.5, (OutputHeight() - TextHeight(*Data\Text)) * 0.5, *Data\Text, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State))
+			
+			StopDrawing()
+		Else
+			StartVectorDrawing(CanvasVectorOutput(Gadget))
+			AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
+			VectorSourceColor(*Data\BackColors(*Data\State))
+			FillPath()
+			
  			If *Data\Image > -1
  				CompilerIf Defined(MaterialVector,#PB_Module)
+ 						Debug "?"
  					If *Data\MaterialVector
  						MaterialVector::Draw(*Data\Image, *Data\ImageXOffset, *Data\ImageYOffset, *Data\ImageWidth, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State), *Data\MaterialVectorStyle)
  					Else
@@ -354,16 +363,17 @@ Module CanvasButton
  					EndIf
  				CompilerEndIf
  			EndIf
+ 			StopVectorDrawing()
  		EndIf
  		
-		StopVectorDrawing()
+		
 		
 	EndProcedure
 EndModule
 
 CompilerIf #PB_Compiler_IsMainFile
 	
-	IncludeFile "..\MaterialVector\MaterialVector.pbi"
+; 	IncludeFile "..\MaterialVector\MaterialVector.pbi"
 	
 	Procedure HandlerClose()
 		End
@@ -375,7 +385,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 	OpenWindow(0, 0, 0, 400, 300, "CanvasButton example", #PB_Window_ScreenCentered | #PB_Window_SystemMenu)
 	
-	CanvasButton::GadgetImage(0, 10,10,40,40, MaterialVector::#Play, CanvasButton::#MaterialVectorIcon | CanvasButton::#DarkTheme)
+	CanvasButton::Gadget(0, 10, 10, 200, 40, "Testouille", CanvasButton::#DarkTheme)
 	
 	BindEvent(#PB_Event_CloseWindow, @HandlerClose())
 	CanvasButton::BindEventHandler(0, @HandlerButton())
@@ -386,6 +396,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 255
-; Folding = DAAI-
+; CursorPosition = 386
+; FirstLine = 217
+; Folding = 4EAP-
 ; EnableXP
