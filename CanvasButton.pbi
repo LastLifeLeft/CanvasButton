@@ -57,6 +57,9 @@ Module CanvasButton
 		Width.i
 		Height.i
 		
+		Toggle.b
+		ToggleState.b
+		
 		Font.i
 		
 		Image.i
@@ -122,37 +125,15 @@ Module CanvasButton
 	Procedure GadgetImage(Gadget, X, Y, Width, Height, Image = -1, Flags = #Default)
 		Protected Result, *Data.GadgetData
 		
-		Result = CanvasGadget(Gadget, X, Y, Width, Height, #PB_Canvas_Keyboard)
+		Result = Gadget(Gadget, X, Y, Width, Height, "", Flags)
 		
 		If Result
 			If Gadget = #PB_Any
 				Gadget = Result
 			EndIf
-			
-			*Data = AllocateStructure(GadgetData)
+			*Data.GadgetData = GetGadgetData(Gadget)
 			
 			With *Data
-				If Flags & #DarkTheme
-					\BackColors(#Cold) = #Style_Dark_Back
-					\BackColors(#Warm) = #Style_Dark_BackWarm
-					\BackColors(#Hot) = #Style_Dark_BackHot
-					
-					\FrontColors(#Cold) = #Style_Dark_Front
-					\FrontColors(#Warm) = #Style_Dark_FrontWarm
-					\FrontColors(#Hot) = #Style_Dark_FrontHot
-				Else
-					\BackColors(#Cold) = #Style_Light_Back
-					\BackColors(#Warm) = #Style_Light_BackWarm
-					\BackColors(#Hot) = #Style_Light_BackHot
-					
-					\FrontColors(#Cold) = #Style_Light_Front
-					\FrontColors(#Warm) = #Style_Light_FrontWarm
-					\FrontColors(#Hot) = #Style_Light_FrontHot
-				EndIf
-				
-				\Width = Width
-				\Height = Height
-				
 				\Type = #Image
 				\Image = Image
 				CompilerIf Defined(MaterialVector,#PB_Module)
@@ -179,19 +160,16 @@ Module CanvasButton
 						
 						\MaterialVectorStyle = Flags
 					Else
-				CompilerEndIf
+					CompilerEndIf
 					
-						If \Image > -1
-							
-						EndIf
+					If \Image > -1
+						
+					EndIf
 					
-				CompilerIf Defined(MaterialVector,#PB_Module)
+					CompilerIf Defined(MaterialVector,#PB_Module)
 					EndIf
 				CompilerEndIf
 			EndWith
-			
-			SetGadgetData(Gadget, *Data)
-			BindGadgetEvent(Gadget, @Handler_Canvas())
 			
 			Redraw(Gadget)
 			
@@ -230,6 +208,11 @@ Module CanvasButton
 					\FrontColors(#Warm) = #Style_Light_FrontWarm
 					\FrontColors(#Hot) = #Style_Light_FrontHot
 				EndIf
+				
+				\Width = Width
+				\Height = Height
+				
+				\Toggle = Flags & #ToggleButton
 				
 				\Type = #Text
 				\Text = Text
@@ -308,11 +291,18 @@ Module CanvasButton
 		
 		Select EventType()
 			Case #PB_EventType_MouseEnter
-				*Data\State = #Warm
-				Result = #True
+				If Not *Data\ToggleState
+					*Data\State = #Warm
+					Result = #True
+				EndIf
 			Case #PB_EventType_MouseLeave
-				*Data\State = #Cold
+				If *Data\ToggleState
+					*Data\State = #Hot
+				Else
+					*Data\State = #Cold
+				EndIf
 				Result = #True
+				
 			Case #PB_EventType_LeftButtonDown
 				*Data\State = #Hot
 				Result = #True
@@ -320,12 +310,18 @@ Module CanvasButton
 				Protected MouseX = GetGadgetAttribute(Gadget, #PB_Canvas_MouseX), MouseY = GetGadgetAttribute(Gadget, #PB_Canvas_MouseY)
 				If MouseX >= 0 And MouseX < *Data\Width And MouseY >= 0 And MouseY < *Data\Height
 					
+					If *Data\Toggle
+						*Data\ToggleState = Bool(Not *Data\ToggleState)
+					EndIf
+					
 					If *Data\Handler
 						CallFunctionFast(*Data\Handler, Gadget)
 					EndIf
 					
-					*Data\State = #Warm
-					Result = #True
+					If Not *Data\ToggleState
+						*Data\State = #Warm
+						Result = #True
+					EndIf
 				EndIf
 		EndSelect
 		
@@ -385,7 +381,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 	OpenWindow(0, 0, 0, 400, 300, "CanvasButton example", #PB_Window_ScreenCentered | #PB_Window_SystemMenu)
 	
-	CanvasButton::Gadget(0, 10, 10, 200, 40, "Testouille", CanvasButton::#DarkTheme)
+	CanvasButton::Gadget(0, 10, 10, 200, 40, "Testouille", CanvasButton::#DarkTheme | CanvasButton::#ToggleButton)
 	
 	BindEvent(#PB_Event_CloseWindow, @HandlerClose())
 	CanvasButton::BindEventHandler(0, @HandlerButton())
@@ -396,7 +392,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 386
-; FirstLine = 217
-; Folding = 4EAP-
+; CursorPosition = 309
+; FirstLine = 128
+; Folding = XDgO-
 ; EnableXP
