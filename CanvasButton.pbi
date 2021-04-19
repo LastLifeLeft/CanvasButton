@@ -20,6 +20,8 @@
 		
 	EndEnumeration
 	
+	Declare Special(Gadget, X, Y, Width, Height, Text.s, Image, Flags = #Default)
+	
 	Declare Gadget(Gadget, X, Y, Width, Height, Text.s, Flags = #Default)
 	Declare GadgetImage(Gadget, X, Y, Width, Height, Image = -1, Flags = #Default)
 	Declare SetColor(Gadget, Colortype, Color)
@@ -29,6 +31,8 @@
 	Declare GetData(Gadget)
 	Declare SetText(Gadget, Text.s)
 	Declare SetImage(Gadget, Image)
+	Declare SetFont(Gadget, Font)
+	Declare SetState(Gadget, State)
 EndDeclareModule
 
 Module CanvasButton
@@ -43,6 +47,7 @@ Module CanvasButton
 	Enumeration ;Type
 		#Text
 		#Image
+		#Special
 	EndEnumeration
 	
 	Structure GadgetData
@@ -67,6 +72,7 @@ Module CanvasButton
 		ImageHeight.i
 		ImageXOffset.i
 		ImageYOffset.i
+		TextYOffset.i
 		
 		*Handler
 		*Data
@@ -80,8 +86,8 @@ Module CanvasButton
 	; Default theme
 	CompilerIf #PB_Compiler_OS = #PB_OS_Windows ; RGB/GBR switcharoo...
 		#Style_Dark_Back = $FF36312F
-		#Style_Dark_BackWarm = $FF3C3734
-		#Style_Dark_BackHot = $FF433C39
+		#Style_Dark_BackWarm = $FF433C39
+		#Style_Dark_BackHot = $FF504943
 		
 		#Style_Dark_Front = $FF97928E
 		#Style_Dark_FrontWarm = $FFDEDDDC
@@ -122,6 +128,69 @@ Module CanvasButton
 	Declare Redraw(Gadget)
 	
 	; Public procedures
+	Procedure Special(Gadget, X, Y, Width, Height, Text.s, Image.i, Flags = #Default)
+		Protected Result, *Data.GadgetData
+		
+		Result = Gadget(Gadget, X, Y, Width, Height, Text, Flags)
+		
+		If Result
+			If Gadget = #PB_Any
+				Gadget = Result
+			EndIf
+			*Data.GadgetData = GetGadgetData(Gadget)
+			
+			With *Data
+				\Type = #Special
+				\Image = Image
+				
+				CompilerIf Defined(MaterialVector,#PB_Module)
+					If Flags & #MaterialVectorIcon
+						\MaterialVector = #True
+						
+						If Flags & MaterialVector::#Style_Box Or Flags & MaterialVector::#Style_Circle
+							If Width > Height
+								\ImageWidth = Height
+							Else
+								\ImageWidth = Width
+							EndIf
+						Else
+							If Width > Height
+								\ImageYOffset = Round(Height * 0.35, #PB_Round_Up)
+								\ImageXOffset = \ImageYOffset
+								\ImageWidth = Width - 2 * \ImageXOffset
+							Else
+								\ImageXOffset = Round(Width * 0.35, #PB_Round_Up)
+								\ImageYOffset = \ImageXOffset
+								\ImageWidth = Width - 2 * \ImageXOffset
+							EndIf
+							
+							\ImageYOffset = \ImageXOffset * 0.5
+							
+						EndIf
+						
+						\MaterialVectorStyle = Flags
+					Else
+					CompilerEndIf
+					
+					If \Image > -1
+						\ImageYOffset = (72 - ImageHeight(\Image)) * 0.5
+						\ImageXOffset = (128 - ImageWidth(\Image)) * 0.5
+						\ImageWidth = 128
+						\ImageHeight = 81
+					EndIf
+					
+					CompilerIf Defined(MaterialVector,#PB_Module)
+					EndIf
+				CompilerEndIf
+				
+				
+			EndWith
+			
+		EndIf
+		Redraw(Gadget)
+		ProcedureReturn Result
+	EndProcedure
+	
 	Procedure GadgetImage(Gadget, X, Y, Width, Height, Image = -1, Flags = #Default)
 		Protected Result, *Data.GadgetData
 		
@@ -245,11 +314,10 @@ Module CanvasButton
 	
 	Procedure SetColor(Gadget, Colortype, Color)
 		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		
-		If Colortype < 3
+		If Colortype < #ColorType_FrontCold
 			*Data\BackColors(Colortype) = Color
 		Else
-			*Data\BackColors(Colortype - 3) = Color
+			*Data\FrontColors(Colortype - #ColorType_FrontCold) = Color
 		EndIf
 		
 		Redraw(Gadget)
@@ -283,6 +351,29 @@ Module CanvasButton
 		CompilerEndIf
 		
 		Redraw(Gadget)
+	EndProcedure
+	
+	Procedure SetFont(Gadget, Font)
+		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
+		
+		*GadgetData\Font = Font
+		Redraw(Gadget)
+	EndProcedure
+	
+	Procedure SetState(Gadget, State)
+		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
+		
+		If Not *GadgetData\ToggleState = State
+			*GadgetData\ToggleState = State
+			If *GadgetData\ToggleState
+				*GadgetData\State = #Hot
+			Else
+				*GadgetData\State = #Cold
+			EndIf
+			
+			Redraw(Gadget)
+		EndIf
+		
 	EndProcedure
 	
 	; Private procedures
@@ -334,36 +425,67 @@ Module CanvasButton
 	
 	Procedure Redraw(Gadget)
 		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		If *Data\Type = #Text
-			StartDrawing(CanvasOutput(Gadget))
-			Box(0,0, OutputWidth(), OutputHeight(), *Data\BackColors(*Data\State))
-			DrawingFont(FontID(*Data\Font))
-			DrawText((OutputWidth() - TextWidth(*Data\Text)) * 0.5, (OutputHeight() - TextHeight(*Data\Text)) * 0.5, *Data\Text, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State))
-			
-			StopDrawing()
-		Else
-			StartVectorDrawing(CanvasVectorOutput(Gadget))
-			AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
-			VectorSourceColor(*Data\BackColors(*Data\State))
-			FillPath()
-			
- 			If *Data\Image > -1
- 				CompilerIf Defined(MaterialVector,#PB_Module)
- 						Debug "?"
- 					If *Data\MaterialVector
- 						MaterialVector::Draw(*Data\Image, *Data\ImageXOffset, *Data\ImageYOffset, *Data\ImageWidth, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State), *Data\MaterialVectorStyle)
- 					Else
- 				CompilerEndIf
- 				
- 				CompilerIf Defined(MaterialVector,#PB_Module)
- 					EndIf
- 				CompilerEndIf
- 			EndIf
- 			StopVectorDrawing()
- 		EndIf
- 		
-		
-		
+		Select *Data\Type 
+			Case #Text
+				StartDrawing(CanvasOutput(Gadget))
+				Box(0,0, OutputWidth(), OutputHeight(), *Data\BackColors(*Data\State))
+				DrawingFont(FontID(*Data\Font))
+				DrawText((OutputWidth() - TextWidth(*Data\Text)) * 0.5, (OutputHeight() - TextHeight(*Data\Text)) * 0.5, *Data\Text, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State))
+				
+				StopDrawing()
+			Case #Image
+				StartVectorDrawing(CanvasVectorOutput(Gadget))
+				AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
+				VectorSourceColor(*Data\BackColors(*Data\State))
+				FillPath()
+				
+				If *Data\Image > -1
+					CompilerIf Defined(MaterialVector,#PB_Module)
+						If *Data\MaterialVector
+							MaterialVector::Draw(*Data\Image, *Data\ImageXOffset, *Data\ImageYOffset, *Data\ImageWidth, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State), *Data\MaterialVectorStyle)
+						Else
+						CompilerEndIf
+						
+						CompilerIf Defined(MaterialVector,#PB_Module)
+						EndIf
+					CompilerEndIf
+				EndIf
+				StopVectorDrawing()
+			Case #Special
+				StartVectorDrawing(CanvasVectorOutput(Gadget))
+				AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
+				VectorSourceColor(*Data\BackColors(*Data\State))
+				FillPath()
+				
+				VectorFont(FontID(*Data\Font), 18)
+				
+				If *Data\Image > -1
+					CompilerIf Defined(MaterialVector,#PB_Module)
+						If *Data\MaterialVector
+							MaterialVector::Draw(*Data\Image, *Data\ImageXOffset, *Data\ImageYOffset, *Data\ImageWidth, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State), *Data\MaterialVectorStyle)
+							MovePathCursor((VectorOutputWidth() - VectorTextWidth(*Data\Text)) * 0.5, *Data\ImageYOffset * 1.5 + *Data\ImageWidth)
+							VectorSourceColor(*Data\FrontColors(*Data\State))
+							DrawVectorText(*Data\Text)
+						Else
+						CompilerEndIf
+						
+						MovePathCursor(*Data\ImageXOffset, *Data\ImageYOffset)
+						DrawVectorImage(ImageID(*Data\Image))
+						MovePathCursor(3, 72)
+						VectorSourceColor(*Data\FrontColors(*Data\State))
+						DrawVectorText(*Data\Text)
+						
+; 						If *Data\State
+; 							AddPathBox(0, 0, *Data\Width, *Data\Height)
+; 							StrokePath(1)
+; 						EndIf
+						
+						CompilerIf Defined(MaterialVector,#PB_Module)
+						EndIf
+					CompilerEndIf
+				EndIf
+				StopVectorDrawing()
+		EndSelect
 	EndProcedure
 EndModule
 
@@ -392,7 +514,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 309
-; FirstLine = 128
-; Folding = XDgO-
+; CursorPosition = 475
+; FirstLine = 223
+; Folding = -bAi--
 ; EnableXP
