@@ -1,4 +1,4 @@
-﻿IncludeFile "..\MaterialVector\MaterialVector.pbi"
+;IncludeFile "..\MaterialVector\MaterialVector.pbi" ; Include https://github.com/LastLifeLeft/MaterialVector ahead of this module to autmatically use materialvector icon as image. 
 
 DeclareModule CanvasButton
 	EnumerationBinary
@@ -586,7 +586,8 @@ CompilerIf #PB_Compiler_IsMainFile
 	Circle(15, 15, 13, $FF67BC00)
 	StopDrawing()
 	
-	CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", MaterialVector::#Cube, CanvasButton::#DarkTheme | CanvasButton::#MaterialVector | CanvasButton::#Toggle)
+	CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", 5, CanvasButton::#DarkTheme | CanvasButton::#Toggle)
+	;CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", MaterialVector::#cube , CanvasButton::#DarkTheme | CanvasButton::#Toggle | CanvasButton::#MaterialVector) ;if materialvector is indluded : 
 	ResizeGadget(0, #PB_Ignore, #PB_Ignore, 380, 150)
 	SetGadgetState(0, #True)
 	BindGadgetEvent(0, @HandlerButton(), #PB_EventType_Change)
@@ -597,7 +598,6 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 577
-; FirstLine = 59
-; Folding = vt4WNA1
+; CursorPosition = 24
+; Folding = FAAAJAk
 ; EnableXP
