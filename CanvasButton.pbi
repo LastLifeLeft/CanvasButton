@@ -1,512 +1,595 @@
-﻿DeclareModule CanvasButton
-	
-	EnumerationBinary ;Flags
+﻿IncludeFile "..\MaterialVector\MaterialVector.pbi"
+
+DeclareModule CanvasButton
+	EnumerationBinary
 		#Default = 0
-		#LightTheme = 0
-		
-		#ToggleButton
-		#MaterialVectorIcon
 		#DarkTheme
+		#Inline
+		#Toggle
+		
+		CompilerIf Defined(MaterialVector, #PB_Module)
+			#MaterialVector
+		CompilerEndIf
 	EndEnumeration
 	
-	Enumeration ;Colors
-		#ColorType_BackCold
-		#ColorType_BackWarm
-		#ColorType_BackHot
-		
-		#ColorType_FrontCold
-		#ColorType_FrontWarm
-		#ColorType_FrontHot
-		
-	EndEnumeration
+	#FrontColor_Cold = #PB_Gadget_FrontColor
+	#FrontColor_Warm = 10
+	#FrontColor_Hot  = 11
+	#BackColor_Cold  = #PB_Gadget_BackColor 
+	#BackColor_Warm  = 12 
+	#BackColor_Hot   = 13 
 	
-	Declare Special(Gadget, X, Y, Width, Height, Text.s, Image, Flags = #Default)
-	
-	Declare Gadget(Gadget, X, Y, Width, Height, Text.s, Flags = #Default)
-	Declare GadgetImage(Gadget, X, Y, Width, Height, Image = -1, Flags = #Default)
-	Declare SetColor(Gadget, Colortype, Color)
-	Declare Free(Gadget)
-	Declare BindEventHandler(Gadget, *Handler)
-	Declare SetData(Gadget, *Data)
-	Declare GetData(Gadget)
-	Declare SetText(Gadget, Text.s)
-	Declare SetImage(Gadget, Image)
-	Declare SetFont(Gadget, Font)
-	Declare SetState(Gadget, State)
+	Declare.i Gadget(Gadget, x, y, Width, Height, Text.s = "", Image = -1 , Flags = #Default)
 EndDeclareModule
 
 Module CanvasButton
 	EnableExplicit
-	;{ Private variables, structures, constants...
+	
+	;{ Variables, structures, constants...
+	CompilerSelect #PB_Compiler_OS
+		CompilerCase #PB_OS_Windows ;{
+			Structure GadgetVT
+				GadgetType.l
+				SizeOf.l
+				*GadgetCallback
+				*FreeGadget
+				*GetGadgetState
+				*SetGadgetState
+				*GetGadgetText
+				*SetGadgetText
+				*AddGadgetItem2
+				*AddGadgetItem3
+				*RemoveGadgetItem
+				*ClearGadgetItemList
+				*ResizeGadget
+				*CountGadgetItems
+				*GetGadgetItemState
+				*SetGadgetItemState
+				*GetGadgetItemText
+				*SetGadgetItemText
+				*OpenGadgetList2
+				*GadgetX
+				*GadgetY
+				*GadgetWidth
+				*GadgetHeight
+				*HideGadget
+				*AddGadgetColumn
+				*RemoveGadgetColumn
+				*GetGadgetAttribute
+				*SetGadgetAttribute
+				*GetGadgetItemAttribute2
+				*SetGadgetItemAttribute2
+				*SetGadgetColor
+				*GetGadgetColor
+				*SetGadgetItemColor2
+				*GetGadgetItemColor2
+				*SetGadgetItemData
+				*GetGadgetItemData
+				*GetRequiredSize
+				*SetActiveGadget
+				*GetGadgetFont
+				*SetGadgetFont
+				*SetGadgetItemImage
+			EndStructure
+			
+			Structure PB_Gadget
+				*Gadget
+				*vt.GadgetVT
+				UserData.i
+				OldCallback.i
+				Daten.i[4]
+			EndStructure
+			;}
+		CompilerCase #PB_OS_Linux ;{
+			Structure GadgetVT
+				SizeOf.l
+				GadgetType.l
+				*ActivateGadget
+				*FreeGadget
+				*GetGadgetState
+				*SetGadgetState
+				*GetGadgetText
+				*SetGadgetText
+				*AddGadgetItem2
+				*AddGadgetItem3
+				*RemoveGadgetItem
+				*ClearGadgetItemList
+				*ResizeGadget
+				*CountGadgetItems
+				*GetGadgetItemState
+				*SetGadgetItemState
+				*GetGadgetItemText
+				*SetGadgetItemText
+				*SetGadgetFont
+				*OpenGadgetList2
+				*AddGadgetColumn
+				*GetGadgetAttribute
+				*SetGadgetAttribute
+				*GetGadgetItemAttribute2
+				*SetGadgetItemAttribute2
+				*RemoveGadgetColumn
+				*SetGadgetColor
+				*GetGadgetColor
+				*SetGadgetItemColor2
+				*GetGadgetItemColor2
+				*SetGadgetItemData
+				*GetGadgetItemData
+				*GetGadgetFont
+				*SetGadgetItemImage
+				*HideGadget ;Mac & Windows only
+			EndStructure
+			
+			Structure PB_Gadget
+				*Gadget
+				*GadgetContainer
+				*vt.GadgetVT
+				UserData.i
+				Daten.i[4]
+			EndStructure ;}
+		CompilerCase #PB_OS_MacOS ;{
+			Structure PB_Gadget
+				*Gadget
+				*Container
+				*Functions	; ??
+				UserData.i
+				WindowID.i
+				Type.l
+				Flags.l
+			EndStructure
+			CompilerError "MacOS isn't supported, sorry."
+			;}
+	CompilerEndSelect
+	
 	Enumeration ;States
 		#Cold
 		#Warm
 		#Hot
 	EndEnumeration
 	
-	Enumeration ;Type
-		#Text
-		#Image
-		#Special
-	EndEnumeration
+	Prototype ProtoRedraw(*GadgetData)
 	
 	Structure GadgetData
-		MouseInside.b
+		VT.GadgetVT ;Must be the first element of this structure!
+		*OriginalVT.GadgetVT
 		
-		Array BackColors.l(2)
-		Array FrontColors.l(2)
+		Gadget.i
+		Inline.b
+		Toggle.b
 		
 		State.b
-		Type.b
-		Text.s
-		Width.i
-		Height.i
-		
-		Toggle.b
 		ToggleState.b
 		
-		Font.i
-		
 		Image.i
-		ImageWidth.i
-		ImageHeight.i
-		ImageXOffset.i
-		ImageYOffset.i
-		TextYOffset.i
+		ImageWidth.l
+		ImageHeight.l
+		ImageX.l
+		ImageY.l
 		
-		*Handler
-		*Data
+		BackColor.l[3]
+		FrontColor.l[3]
 		
-		CompilerIf Defined(MaterialVector,#PB_Module)
+		Height.l
+		Width.l
+		
+		Font.i
+		Text.s
+		TextWidth.l
+		TextHeight.l
+		TextX.l
+		TextY.l
+		
+		CompilerIf Defined(MaterialVector, #PB_Module)
 			MaterialVector.b
-			MaterialVectorStyle.l
+			Flag.i
 		CompilerEndIf
+		
+		Redraw.ProtoRedraw
 	EndStructure
 	
-	; Default theme
-	CompilerIf #PB_Compiler_OS = #PB_OS_Windows ; RGB/GBR switcharoo...
-		#Style_Dark_Back = $FF36312F
-		#Style_Dark_BackWarm = $FF433C39
-		#Style_Dark_BackHot = $FF504943
-		
-		#Style_Dark_Front = $FF97928E
-		#Style_Dark_FrontWarm = $FFDEDDDC
-		#Style_Dark_FrontHot = $FFFFFFFF
-		
-		#Style_Light_Back = $FFF5F3F2
-		#Style_Light_BackWarm = $FFEDEAE8
-		#Style_Light_BackHot = $FFDCD7D4
-		
-		#Style_Light_Front = $FF80746A
-		#Style_Light_FrontWarm = $FF38332E
-		#Style_Light_FrontHot = $FF070606
-		
-	CompilerElse
-		#Style_Dark_Back = $2F3136FF
-		#Style_Dark_BackWarm = $34373CFF
-		#Style_Dark_BackHot = $393C43FF
-		
-		#Style_Dark_Front = $8E9297FF
-		#Style_Dark_FrontWarm = $DCDDDEFF
-		#Style_Dark_FrontHot = $FFFFFFFF
-		
-		#Style_Light_Back = $F2F3F5FF
-		#Style_Light_BackWarm = $E8EAEDFF
-		#Style_Light_BackHot = $D4D7DCFF
-		
-		#Style_Light_Front = $6A7480FF
-		#Style_Light_FrontWarm = $2E3338FF
-		#Style_Light_FrontHot = $060607FF
-	CompilerEndIf
+	#Style_Dark_BackCold = $2F3136
+	#Style_Dark_BackWarm = $34373C
+	#Style_Dark_BackHot = $393C43
+	
+	#Style_Dark_FrontCold = $8E9297
+	#Style_Dark_FrontWarm = $DCDDDE
+	#Style_Dark_FrontHot = $FFFFFF
+	
+	#Style_Light_BackCold = $F2F3F5
+	#Style_Light_BackWarm = $E8EAED
+	#Style_Light_BackHot = $D4D7DC
+	
+	#Style_Light_FrontCold = $6A7480FF
+	#Style_Light_FrontWarm = $2E3338
+	#Style_Light_FrontHot = $060607
 	
 	Global DefaultFont = LoadFont(#PB_Any, "Calibri", 12, #PB_Font_HighQuality)
 	;}
 	
-	; Private procedures declaration
-	Declare Handler_Canvas()
+	;{ Macro
+	CompilerIf #PB_Compiler_OS = #PB_OS_Windows ; Fix color
+		Macro FixColor(Color)
+			RGB(Blue(Color), Green(Color), Red(Color))
+		EndMacro
+	CompilerElse
+		Macro FixColor(Color)
+			Color
+		EndMacro
+	CompilerEndIf
+	CompilerIf #PB_Compiler_OS = #PB_OS_Windows ; Set Alpha
+		Macro SetAlpha(Alpha, Color)
+			Alpha << 24 + Color
+		EndMacro
+	CompilerElse
+		Macro SetAlpha(Alpha, Color) ; You might want to check that...
+			Color << 8 + Alpha
+		EndMacro
+	CompilerEndIf
 	
-	Declare Redraw(Gadget)
-	
-	; Public procedures
-	Procedure Special(Gadget, X, Y, Width, Height, Text.s, Image.i, Flags = #Default)
-		Protected Result, *Data.GadgetData
-		
-		Result = Gadget(Gadget, X, Y, Width, Height, Text, Flags)
-		
-		If Result
-			If Gadget = #PB_Any
-				Gadget = Result
-			EndIf
-			*Data.GadgetData = GetGadgetData(Gadget)
+	Macro CalculateSizes
+		CompilerIf Defined(MaterialVector, #PB_Module)
+			\MaterialVector = \Flag & #MaterialVector
 			
-			With *Data
-				\Type = #Special
-				\Image = Image
+			If \MaterialVector
 				
-				CompilerIf Defined(MaterialVector,#PB_Module)
-					If Flags & #MaterialVectorIcon
-						\MaterialVector = #True
-						
-						If Flags & MaterialVector::#Style_Box Or Flags & MaterialVector::#Style_Circle
-							If Width > Height
-								\ImageWidth = Height
-							Else
-								\ImageWidth = Width
-							EndIf
-						Else
-							If Width > Height
-								\ImageYOffset = Round(Height * 0.35, #PB_Round_Up)
-								\ImageXOffset = \ImageYOffset
-								\ImageWidth = Width - 2 * \ImageXOffset
-							Else
-								\ImageXOffset = Round(Width * 0.35, #PB_Round_Up)
-								\ImageYOffset = \ImageXOffset
-								\ImageWidth = Width - 2 * \ImageXOffset
-							EndIf
-							
-							\ImageYOffset = \ImageXOffset * 0.5
-							
-						EndIf
-						
-						\MaterialVectorStyle = Flags
+				If \Image > -1
+					If Width > Height
+						\ImageWidth = Height * 0.6
 					Else
-					CompilerEndIf
-					
-					If \Image > -1
-						\ImageYOffset = (72 - ImageHeight(\Image)) * 0.5
-						\ImageXOffset = (128 - ImageWidth(\Image)) * 0.5
-						\ImageWidth = 128
-						\ImageHeight = 81
+						\ImageWidth = Width * 0.6
 					EndIf
 					
-					CompilerIf Defined(MaterialVector,#PB_Module)
-					EndIf
-				CompilerEndIf
-				
-				
-			EndWith
-			
-		EndIf
-		Redraw(Gadget)
-		ProcedureReturn Result
-	EndProcedure
-	
-	Procedure GadgetImage(Gadget, X, Y, Width, Height, Image = -1, Flags = #Default)
-		Protected Result, *Data.GadgetData
+					\ImageHeight = \ImageWidth
+					\ImageX = (\Width - \ImageWidth) * 0.5
+					\imageY = (\Height - \ImageHeight) * 0.5
+				EndIf
+			Else
+		CompilerEndIf
+				If \Image > -1
+					\ImageWidth = ImageWidth(\Image)
+					\ImageHeight = ImageHeight(\Image)
+					\ImageX = (\Width - \ImageWidth) * 0.5
+					\imageY = (\Height - \ImageHeight) * 0.5
+				EndIf
+		CompilerIf Defined(MaterialVector, #PB_Module)
+			EndIf	
+		CompilerEndIf
 		
-		Result = Gadget(Gadget, X, Y, Width, Height, "", Flags)
+		\Font = DefaultFont
 		
-		If Result
-			If Gadget = #PB_Any
-				Gadget = Result
-			EndIf
-			*Data.GadgetData = GetGadgetData(Gadget)
-			
-			With *Data
-				\Type = #Image
-				\Image = Image
-				CompilerIf Defined(MaterialVector,#PB_Module)
-					If Flags & #MaterialVectorIcon
-						\MaterialVector = #True
-						
-						If Flags & MaterialVector::#Style_Box Or Flags & MaterialVector::#Style_Circle
-							If Width > Height
-								\ImageWidth = Height
-							Else
-								\ImageWidth = Width
-							EndIf
-						Else
-							If Width > Height
-								\ImageYOffset = Round(Height * 0.1, #PB_Round_Up)
-								\ImageXOffset = \ImageYOffset
-								\ImageWidth = Width - 2 * \ImageXOffset
-							Else
-								\ImageXOffset = Round(Width * 0.1, #PB_Round_Up)
-								\ImageYOffset = \ImageXOffset
-								\ImageWidth = Width - 2 * \ImageXOffset
-							EndIf
-						EndIf
-						
-						\MaterialVectorStyle = Flags
-					Else
-					CompilerEndIf
-					
-					If \Image > -1
-						
-					EndIf
-					
-					CompilerIf Defined(MaterialVector,#PB_Module)
-					EndIf
-				CompilerEndIf
-			EndWith
-			
-			Redraw(Gadget)
-			
-		EndIf
-		
-		ProcedureReturn Result
-	EndProcedure
-	
-	Procedure Gadget(Gadget, X, Y, Width, Height, Text.s, Flags = #Default)
-		Protected Result, *Data.GadgetData
-		
-		Result = CanvasGadget(Gadget, X, Y, Width, Height, #PB_Canvas_Keyboard)
-		
-		If Result
-			If Gadget = #PB_Any
-				Gadget = Result
-			EndIf
-			
-			*Data = AllocateStructure(GadgetData)
-			
-			With *Data
-				If Flags & #DarkTheme
-					\BackColors(#Cold) = #Style_Dark_Back
-					\BackColors(#Warm) = #Style_Dark_BackWarm
-					\BackColors(#Hot) = #Style_Dark_BackHot
-					
-					\FrontColors(#Cold) = #Style_Dark_Front
-					\FrontColors(#Warm) = #Style_Dark_FrontWarm
-					\FrontColors(#Hot) = #Style_Dark_FrontHot
+		If \Text <> ""
+			CompilerIf Defined(MaterialVector, #PB_Module)
+				If \MaterialVector
+					StartVectorDrawing(CanvasVectorOutput(\Gadget))
+					VectorFont(FontID(\Font))
+					\TextWidth = VectorTextWidth(\Text)
+					\TextHeight = VectorTextHeight(\Text)
+					StopVectorDrawing()
 				Else
-					\BackColors(#Cold) = #Style_Light_Back
-					\BackColors(#Warm) = #Style_Light_BackWarm
-					\BackColors(#Hot) = #Style_Light_BackHot
-					
-					\FrontColors(#Cold) = #Style_Light_Front
-					\FrontColors(#Warm) = #Style_Light_FrontWarm
-					\FrontColors(#Hot) = #Style_Light_FrontHot
+			CompilerEndIf
+					StartDrawing(CanvasOutput(\Gadget))
+					DrawingFont(FontID(\Font))
+					\TextWidth = TextWidth(\Text)
+					\TextHeight = TextHeight(\Text)
+					StopDrawing()
+			CompilerIf Defined(MaterialVector, #PB_Module)
+				EndIf
+			CompilerEndIf
+			
+			\TextX = (\Width - \TextWidth) * 0.5
+			\TextY = (\Height - \TextHeight) * 0.5
+			
+			If \Image > -1
+				Margin = \TextHeight * 0.5
+				
+				If \Inline
+					\ImageX = (\Width - \ImageWidth - \TextWidth - Margin) * 0.5
+					\TextX = (\Width - \ImageWidth - \TextWidth) * 0.5 + \ImageWidth + Margin
+				Else
+					\TextY = \Height - \TextHeight - Margin
+					\imageY = (\Height - \ImageHeight - (\Height - \TextY)) * 0.5
+				EndIf
+			EndIf
+		EndIf
+	EndMacro
+	;}
+	
+	;{ Private procedures declaration
+	Declare Handler()
+	Declare Redraw(Gadget)
+	CompilerIf Defined(MaterialVector, #PB_Module)
+		Declare VectorRedraw(*GadgetData.GadgetData)
+	CompilerEndIf
+	Declare _ResizeGadget(*this.PB_Gadget, x, y, Width, Height)
+	Declare _FreeGadget(*this.PB_Gadget)
+	
+	Declare _GetGadgetState(*this.PB_Gadget)
+	Declare _GetGadgetColor(*this.PB_Gadget, ColorType)
+	
+	Declare _SetGadgetState(*this.PB_Gadget, State.i)
+	Declare _SetGadgetColor(*this.PB_Gadget, ColorType, Color)
+	;}
+	
+	;{ Public procedures
+	Procedure.i Gadget(Gadget, x, y, Width, Height, Text.s = "", Image = -1 , Flags = #Default)
+		Protected Result = CanvasGadget(Gadget, x, y, Width, Height), Margin
+		
+		If Result
+			If Gadget = #PB_Any
+				Gadget = result
+			EndIf
+			
+			Protected *this.PB_Gadget = IsGadget(Gadget)
+			Protected *GadgetData.GadgetData = AllocateStructure(GadgetData)
+			CopyMemory(*this\vt, *GadgetData\vt, SizeOf(GadgetVT))
+			
+			With *GadgetData
+				\OriginalVT = *this\VT
+				
+				\VT\FreeGadget = @_FreeGadget()
+				\VT\ResizeGadget = @_ResizeGadget()
+				
+				\VT\GetGadgetState = @_GetGadgetState()
+				\VT\GetGadgetColor = @_GetGadgetColor()
+				
+				\VT\SetGadgetState = @_SetGadgetState()
+				\VT\SetGadgetColor = @_SetGadgetColor()
+				
+				\Gadget = Gadget
+				\Inline = Bool(Flags & #Inline)
+				\Toggle = Bool(Flags & #Toggle)
+				
+				\State = #Cold
+				
+				If Flags & #DarkTheme
+					\BackColor[#Cold] = SetAlpha($FF,  FixColor(#Style_Dark_BackCold))
+					\BackColor[#Warm] = SetAlpha($FF,  FixColor(#Style_Dark_BackWarm))
+					\BackColor[#Hot] =  SetAlpha($FF,  FixColor( #Style_Dark_BackHot))
+				
+					\FrontColor[#Cold] = SetAlpha($FF, FixColor(#Style_Dark_FrontCold))
+					\FrontColor[#Warm] = SetAlpha($FF, FixColor(#Style_Dark_FrontWarm))
+					\FrontColor[#Hot] =  SetAlpha($FF, FixColor( #Style_Dark_FrontHot))
+				Else
+					\BackColor[#Cold] = SetAlpha($FF,  FixColor(#Style_Light_BackCold))
+					\BackColor[#Warm] = SetAlpha($FF,  FixColor(#Style_Light_BackWarm))
+					\BackColor[#Hot] = SetAlpha( $FF,  FixColor( #Style_Light_BackHot))
+				
+					\FrontColor[#Cold] = SetAlpha($FF, FixColor(#Style_Light_FrontCold))
+					\FrontColor[#Warm] = SetAlpha($FF, FixColor(#Style_Light_FrontWarm))
+					\FrontColor[#Hot] =  SetAlpha($FF, FixColor( #Style_Light_FrontHot))
 				EndIf
 				
 				\Width = Width
 				\Height = Height
-				
-				\Toggle = Flags & #ToggleButton
-				
-				\Type = #Text
+				\Image = Image
 				\Text = Text
 				
-				\Font = DefaultFont
+				\Redraw = @Redraw()
+				
+				CompilerIf Defined(MaterialVector, #PB_Module)
+					\Flag = Flags
+					If Flags & #MaterialVector
+						\Redraw = @VectorRedraw()
+					EndIf
+				CompilerEndIf
+				
+				CalculateSizes
 			EndWith
 			
-			SetGadgetData(Gadget, *Data)
-			BindGadgetEvent(Gadget, @Handler_Canvas())
+			*this\VT = *GadgetData
 			
-			Redraw(Gadget)
-			
+			BindGadgetEvent(Gadget, @Handler())
+			*GadgetData\Redraw(*GadgetData)
 		EndIf
 		
 		ProcedureReturn Result
 	EndProcedure
+	;}
 	
-	Procedure Free(Gadget)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		UnbindGadgetEvent(Gadget, @Handler_Canvas())
-		FreeStructure(*Data.GadgetData)
-		FreeGadget(Gadget)
+	;{ Private procedures
+	Procedure Handler()
+		Protected Gadget = EventGadget(), *this.PB_Gadget = IsGadget(Gadget), *GadgetData.GadgetData = *this\vt
+		With *GadgetData
+			Select EventType()
+				Case #PB_EventType_MouseEnter
+					\State = #Warm
+					\Redraw(*GadgetData)
+				Case #PB_EventType_MouseLeave
+					If \ToggleState
+						\State = #Hot
+					Else
+						\State = #Cold
+					EndIf
+					\Redraw(*GadgetData)
+				Case #PB_EventType_LeftButtonDown
+					If \ToggleState
+						\State = #Cold
+					Else
+						\State = #Hot
+					EndIf
+					\Redraw(*GadgetData)
+				Case #PB_EventType_LeftButtonUp
+					Protected MouseX = GetGadgetAttribute(\Gadget, #PB_Canvas_MouseX), MouseY = GetGadgetAttribute(\Gadget, #PB_Canvas_MouseY)
+					If MouseX >= 0 And MouseX <= \Width And MouseY >= 0 And MouseY <= \Height
+						If \Toggle
+							\ToggleState = Bool(Not \ToggleState)
+						EndIf
+						
+						PostEvent(#PB_Event_Gadget, EventWindow(), \Gadget, #PB_EventType_Change)
+					EndIf
+					If \ToggleState
+						\State = #Hot
+					Else
+						If \Toggle
+							\State = #Cold
+						Else
+							\State = #Warm
+						EndIf
+					EndIf
+					\Redraw(*GadgetData)
+			EndSelect
+		EndWith
+		
 	EndProcedure
 	
-	Procedure BindEventHandler(Gadget, *Handler)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		
-		*Data\Handler = *Handler
-	EndProcedure
-	
-	Procedure SetColor(Gadget, Colortype, Color)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		If Colortype < #ColorType_FrontCold
-			*Data\BackColors(Colortype) = Color
-		Else
-			*Data\FrontColors(Colortype - #ColorType_FrontCold) = Color
-		EndIf
-		
-		Redraw(Gadget)
-	EndProcedure
-	
-	Procedure SetData(Gadget, *Data)
-		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
-		
-		*GadgetData\Data = *Data
-	EndProcedure
-	
-	Procedure GetData(Gadget)
-		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
-		
-		ProcedureReturn *GadgetData\Data
-	EndProcedure
-	
-	Procedure SetText(Gadget, Text.s)
-		
-	EndProcedure
-	
-	Procedure SetImage(Gadget, Image)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		
-		CompilerIf Defined(MaterialVector,#PB_Module)
-			If *Data\MaterialVector = #True
-				*Data\Image = Image
-			EndIf
-		CompilerElse
+	Procedure Redraw(*GadgetData.GadgetData)
+		With *GadgetData
+			StartDrawing(CanvasOutput(*GadgetData\Gadget))
+			Box(0, 0, \Width, \Height, \BackColor[\State])
 			
-		CompilerEndIf
-		
-		Redraw(Gadget)
+			If \Image > - 1
+				DrawAlphaImage(ImageID(\Image), \ImageX, \imageY)
+			EndIf
+			
+			If \Text <> ""
+				DrawingFont(FontID(\Font))
+				DrawText(\TextX, \TextY, \Text, \FrontColor[\State], \BackColor[\State])
+			EndIf
+			
+			StopDrawing()
+		EndWith
 	EndProcedure
 	
-	Procedure SetFont(Gadget, Font)
-		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
+	CompilerIf Defined(MaterialVector, #PB_Module)
+		Procedure VectorRedraw(*GadgetData.GadgetData)
+			With *GadgetData
+				StartVectorDrawing(CanvasVectorOutput(*GadgetData\Gadget))
+				VectorSourceColor(\BackColor[\State])
+				AddPathBox(0, 0, \Width, \Height)
+				FillPath()
+				
+				If \Image > - 1
+					MaterialVector::Draw(\Image, \ImageX, \imageY, \ImageWidth, \FrontColor[\State], \BackColor[\State], \Flag)
+				EndIf
+				
+				If \Text <> ""
+					VectorFont(FontID(\Font))
+					VectorSourceColor(\FrontColor[\State])
+					MovePathCursor(\TextX, \TextY)
+					DrawVectorText(\Text)
+				EndIf
+				
+				StopVectorDrawing()
+			EndWith
+		EndProcedure
+	CompilerEndIf
+	
+	Procedure _ResizeGadget(*this.PB_Gadget, x, y, Width, Height) ; Ok
+		Protected *GadgetData.GadgetData = *this\VT, Margin
 		
-		*GadgetData\Font = Font
-		Redraw(Gadget)
+		*this\VT = *GadgetData\OriginalVT
+		ResizeGadget(*GadgetData\Gadget, x, y, Width, Height)
+		*this\VT = *GadgetData
+		
+		With *GadgetData
+			\Width = GadgetWidth(\Gadget)
+			\Height = GadgetHeight(\Gadget)
+			
+			CalculateSizes
+			\Redraw(*GadgetData)
+		EndWith
 	EndProcedure
 	
-	Procedure SetState(Gadget, State)
-		Protected *GadgetData.GadgetData = GetGadgetData(Gadget)
+	Procedure _FreeGadget(*this.PB_Gadget) ; Ok
+		Protected *GadgetData.GadgetData = *this\VT
 		
-		If Not *GadgetData\ToggleState = State
+		*this\VT = *GadgetData\OriginalVT
+		FreeStructure(*GadgetData)
+		CallFunctionFast(*this\vt\FreeGadget, *this)
+	EndProcedure
+	
+	Procedure _GetGadgetState(*this.PB_Gadget) ; Ok
+		Protected *GadgetData.GadgetData = *this\VT
+		ProcedureReturn *GadgetData\ToggleState
+	EndProcedure
+	
+	Procedure _GetGadgetColor(*this.PB_Gadget, ColorType) ; Ok
+		Protected *GadgetData.GadgetData = *this\VT, Result
+		
+		With *GadgetData
+			Select ColorType
+				Case #FrontColor_Cold
+					Result = \FrontColor[#Cold]
+				Case #FrontColor_Warm
+					Result = \FrontColor[#Warm]
+				Case #FrontColor_Hot 
+					Result = \FrontColor[#Hot]
+				Case #BackColor_Cold 
+					Result = \BackColor[#Cold]
+				Case #BackColor_Warm 
+					Result = \BackColor[#Warm]
+				Case #BackColor_Hot  
+					Result = \BackColor[#Hot]
+			EndSelect
+		EndWith
+		
+		ProcedureReturn Result
+	EndProcedure
+	
+	Procedure _SetGadgetState(*this.PB_Gadget, State.i) ; Ok
+		Protected *GadgetData.GadgetData = *this\VT
+		
+		If *GadgetData\Toggle
 			*GadgetData\ToggleState = State
+			
 			If *GadgetData\ToggleState
 				*GadgetData\State = #Hot
 			Else
 				*GadgetData\State = #Cold
 			EndIf
 			
-			Redraw(Gadget)
+			*GadgetData\Redraw(*GadgetData)
+			
 		EndIf
+	EndProcedure
 		
+	Procedure _SetGadgetColor(*this.PB_Gadget, ColorType, Color) ; Ok
+		Protected *GadgetData.GadgetData = *this\VT, Result
+		
+		With *GadgetData
+			Select ColorType
+				Case #FrontColor_Cold
+					\FrontColor[#Cold] = Color
+				Case #FrontColor_Warm
+					\FrontColor[#Warm] = Color
+				Case #FrontColor_Hot 
+					\FrontColor[#Hot] = Color
+				Case #BackColor_Cold 
+					\BackColor[#Cold] = Color
+				Case #BackColor_Warm 
+					\BackColor[#Warm] = Color
+				Case #BackColor_Hot  
+					\BackColor[#Hot] = Color
+			EndSelect
+			
+			\Redraw(*GadgetData)
+		EndWith
 	EndProcedure
 	
-	; Private procedures
-	Procedure Handler_Canvas()
-		Protected Gadget = EventGadget(), *Data.GadgetData = GetGadgetData(Gadget), Result
-		
-		Select EventType()
-			Case #PB_EventType_MouseEnter
-				If Not *Data\ToggleState
-					*Data\State = #Warm
-					Result = #True
-				EndIf
-			Case #PB_EventType_MouseLeave
-				If *Data\ToggleState
-					*Data\State = #Hot
-				Else
-					*Data\State = #Cold
-				EndIf
-				Result = #True
-				
-			Case #PB_EventType_LeftButtonDown
-				*Data\State = #Hot
-				Result = #True
-			Case #PB_EventType_LeftButtonUp
-				Protected MouseX = GetGadgetAttribute(Gadget, #PB_Canvas_MouseX), MouseY = GetGadgetAttribute(Gadget, #PB_Canvas_MouseY)
-				If MouseX >= 0 And MouseX < *Data\Width And MouseY >= 0 And MouseY < *Data\Height
-					
-					If *Data\Toggle
-						*Data\ToggleState = Bool(Not *Data\ToggleState)
-					EndIf
-					
-					If *Data\Handler
-						CallFunctionFast(*Data\Handler, Gadget)
-					EndIf
-					
-					If Not *Data\ToggleState
-						*Data\State = #Warm
-						Result = #True
-					EndIf
-				EndIf
-		EndSelect
-		
-		If Result
-			Redraw(Gadget)
-		EndIf
-		
-		ProcedureReturn Result
-	EndProcedure
-	
-	Procedure Redraw(Gadget)
-		Protected *Data.GadgetData = GetGadgetData(Gadget)
-		Select *Data\Type 
-			Case #Text
-				StartDrawing(CanvasOutput(Gadget))
-				Box(0,0, OutputWidth(), OutputHeight(), *Data\BackColors(*Data\State))
-				DrawingFont(FontID(*Data\Font))
-				DrawText((OutputWidth() - TextWidth(*Data\Text)) * 0.5, (OutputHeight() - TextHeight(*Data\Text)) * 0.5, *Data\Text, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State))
-				
-				StopDrawing()
-			Case #Image
-				StartVectorDrawing(CanvasVectorOutput(Gadget))
-				AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
-				VectorSourceColor(*Data\BackColors(*Data\State))
-				FillPath()
-				
-				If *Data\Image > -1
-					CompilerIf Defined(MaterialVector,#PB_Module)
-						If *Data\MaterialVector
-							MaterialVector::Draw(*Data\Image, *Data\ImageXOffset, *Data\ImageYOffset, *Data\ImageWidth, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State), *Data\MaterialVectorStyle)
-						Else
-						CompilerEndIf
-						
-						CompilerIf Defined(MaterialVector,#PB_Module)
-						EndIf
-					CompilerEndIf
-				EndIf
-				StopVectorDrawing()
-			Case #Special
-				StartVectorDrawing(CanvasVectorOutput(Gadget))
-				AddPathBox(0, 0, VectorOutputWidth(), VectorOutputHeight())
-				VectorSourceColor(*Data\BackColors(*Data\State))
-				FillPath()
-				
-				VectorFont(FontID(*Data\Font), 18)
-				
-				If *Data\Image > -1
-					CompilerIf Defined(MaterialVector,#PB_Module)
-						If *Data\MaterialVector
-							MaterialVector::Draw(*Data\Image, *Data\ImageXOffset, *Data\ImageYOffset, *Data\ImageWidth, *Data\FrontColors(*Data\State), *Data\BackColors(*Data\State), *Data\MaterialVectorStyle)
-							MovePathCursor((VectorOutputWidth() - VectorTextWidth(*Data\Text)) * 0.5, *Data\ImageYOffset * 1.5 + *Data\ImageWidth)
-							VectorSourceColor(*Data\FrontColors(*Data\State))
-							DrawVectorText(*Data\Text)
-						Else
-						CompilerEndIf
-						
-						MovePathCursor(*Data\ImageXOffset, *Data\ImageYOffset)
-						DrawVectorImage(ImageID(*Data\Image))
-						MovePathCursor(3, 72)
-						VectorSourceColor(*Data\FrontColors(*Data\State))
-						DrawVectorText(*Data\Text)
-						
-; 						If *Data\State
-; 							AddPathBox(0, 0, *Data\Width, *Data\Height)
-; 							StrokePath(1)
-; 						EndIf
-						
-						CompilerIf Defined(MaterialVector,#PB_Module)
-						EndIf
-					CompilerEndIf
-				EndIf
-				StopVectorDrawing()
-		EndSelect
-	EndProcedure
+	;}
 EndModule
 
 CompilerIf #PB_Compiler_IsMainFile
-	
-; 	IncludeFile "..\MaterialVector\MaterialVector.pbi"
-	
 	Procedure HandlerClose()
 		End
 	EndProcedure
 	
-	Procedure HandlerButton(Gadget)
-		Debug "Button click!"
+	Procedure HandlerButton()
+		Debug "Click!"
+		Debug GetGadgetState(EventGadget())
 	EndProcedure
 	
 	OpenWindow(0, 0, 0, 400, 300, "CanvasButton example", #PB_Window_ScreenCentered | #PB_Window_SystemMenu)
 	
-	CanvasButton::Gadget(0, 10, 10, 200, 40, "Testouille", CanvasButton::#DarkTheme | CanvasButton::#ToggleButton)
+	CreateImage(5, 30, 30, 32, #PB_Image_Transparent)
+	StartDrawing(ImageOutput(5))
+	DrawingMode(#PB_2DDrawing_AllChannels)
+	Circle(15, 15, 13, $FF67BC00)
+	StopDrawing()
 	
-	BindEvent(#PB_Event_CloseWindow, @HandlerClose())
-	CanvasButton::BindEventHandler(0, @HandlerButton())
+	CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", MaterialVector::#Cube, CanvasButton::#DarkTheme | CanvasButton::#MaterialVector | CanvasButton::#Toggle)
+	ResizeGadget(0, #PB_Ignore, #PB_Ignore, 380, 150)
+	SetGadgetState(0, #True)
+	BindGadgetEvent(0, @HandlerButton(), #PB_EventType_Change)
 	
 	Repeat
 		WaitWindowEvent()
@@ -514,7 +597,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 475
-; FirstLine = 223
-; Folding = -bAi--
+; CursorPosition = 577
+; FirstLine = 59
+; Folding = vt4WNA1
 ; EnableXP
