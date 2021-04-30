@@ -1,4 +1,4 @@
-;IncludeFile "..\MaterialVector\MaterialVector.pbi" ; Include https://github.com/LastLifeLeft/MaterialVector ahead of this module to autmatically use materialvector icon as image. 
+; IncludeFile "..\MaterialVector\MaterialVector.pbi" ; Include https://github.com/LastLifeLeft/MaterialVector ahead of this module to autmatically use materialvector icon as image. 
 
 DeclareModule CanvasButton
 	EnumerationBinary
@@ -6,19 +6,22 @@ DeclareModule CanvasButton
 		#DarkTheme
 		#Inline
 		#Toggle
-		
+		#Outline
+		#Rounded
 		CompilerIf Defined(MaterialVector, #PB_Module)
 			#MaterialVector
 		CompilerEndIf
 	EndEnumeration
 	
-	#FrontColor_Cold = #PB_Gadget_FrontColor
-	#FrontColor_Warm = 10
-	#FrontColor_Hot  = 11
-	#BackColor_Cold  = #PB_Gadget_BackColor 
-	#BackColor_Warm  = 12 
-	#BackColor_Hot   = 13 
-	
+	Enumeration
+		#FrontColor_Cold = #PB_Gadget_FrontColor
+		#BackColor_Cold  = #PB_Gadget_BackColor 
+		#FrontColor_Warm = 10
+		#FrontColor_Hot
+		#BackColor_Warm
+		#BackColor_Hot 
+	EndEnumeration
+
 	Declare.i Gadget(Gadget, x, y, Width, Height, Text.s = "", Image = -1 , Flags = #Default)
 EndDeclareModule
 
@@ -155,6 +158,8 @@ Module CanvasButton
 		Gadget.i
 		Inline.b
 		Toggle.b
+		Outline.b
+		Rounded.b
 		
 		State.b
 		ToggleState.b
@@ -233,9 +238,9 @@ Module CanvasButton
 				
 				If \Image > -1
 					If Width > Height
-						\ImageWidth = Height * 0.6
+						\ImageWidth = Height * 0.5
 					Else
-						\ImageWidth = Width * 0.6
+						\ImageWidth = Width * 0.5
 					EndIf
 					
 					\ImageHeight = \ImageWidth
@@ -337,6 +342,8 @@ Module CanvasButton
 				\Gadget = Gadget
 				\Inline = Bool(Flags & #Inline)
 				\Toggle = Bool(Flags & #Toggle)
+				\Outline = Bool(Flags & #Outline)
+				\Rounded = Bool(Flags & #Rounded)
 				
 				\State = #Cold
 				
@@ -453,9 +460,37 @@ Module CanvasButton
 		Procedure VectorRedraw(*GadgetData.GadgetData)
 			With *GadgetData
 				StartVectorDrawing(CanvasVectorOutput(*GadgetData\Gadget))
-				VectorSourceColor(\BackColor[\State])
-				AddPathBox(0, 0, \Width, \Height)
-				FillPath()
+				
+				If \State = #Cold
+					VectorSourceColor(\BackColor[#Cold])
+					AddPathBox(0, 0, \Width, \Height)
+					FillPath()
+					
+					If \Outline
+						If \Rounded
+							MaterialVector::AddPathRoundedBox(0.5, 0.5, \Width - 1, \Height - 1, 3)
+						Else
+							AddPathBox(0.5, 0.5, \Width - 1, \Height - 1)
+						EndIf
+						
+						VectorSourceColor(\FrontColor[#Cold])
+						StrokePath(1)
+					EndIf
+					
+				ElseIf \Rounded
+					VectorSourceColor(\BackColor[#Cold])
+					AddPathBox(0, 0, \Width, \Height)
+					FillPath()
+					
+					VectorSourceColor(\BackColor[\State])
+					MaterialVector::AddPathRoundedBox(0, 0, \Width, \Height, 3)
+					FillPath()
+				Else
+					VectorSourceColor(\BackColor[\State])
+					AddPathBox(0, 0, \Width, \Height)
+					FillPath()
+				EndIf
+				
 				
 				If \Image > - 1
 					MaterialVector::Draw(\Image, \ImageX, \imageY, \ImageWidth, \FrontColor[\State], \BackColor[\State], \Flag)
@@ -587,7 +622,8 @@ CompilerIf #PB_Compiler_IsMainFile
 	StopDrawing()
 	
 	CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", 5, CanvasButton::#DarkTheme | CanvasButton::#Toggle)
-	;CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", MaterialVector::#cube , CanvasButton::#DarkTheme | CanvasButton::#Toggle | CanvasButton::#MaterialVector) ;if materialvector is indluded : 
+	;if materialvector is indluded : 
+	CanvasButton::Gadget(0, 10, 10, 200, 100, "Testouille", MaterialVector::#cube , CanvasButton::#DarkTheme | CanvasButton::#Toggle | CanvasButton::#MaterialVector | CanvasButton::#Outline)
 	ResizeGadget(0, #PB_Ignore, #PB_Ignore, 380, 150)
 	SetGadgetState(0, #True)
 	BindGadgetEvent(0, @HandlerButton(), #PB_EventType_Change)
@@ -598,6 +634,7 @@ CompilerIf #PB_Compiler_IsMainFile
 	
 CompilerEndIf
 ; IDE Options = PureBasic 5.73 LTS (Windows - x64)
-; CursorPosition = 24
-; Folding = FAAAJAk
+; CursorPosition = 634
+; FirstLine = 553
+; Folding = -------
 ; EnableXP
